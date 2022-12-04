@@ -28,8 +28,7 @@ function Room({ session }) {
   }, []);
 
   const { sendMessage } = useWebSocket(
-        'ws://'
-        + 'localhost:8000'
+    process.env.REACT_APP_WEBSOCKET_SERVER
         + '/ws/room/'
         + session.room
         + '/', { onMessage, onClose });

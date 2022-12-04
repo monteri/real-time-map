@@ -13,9 +13,7 @@ const Status = () => {
     console.log('The status socket closed the connection');
   }, []);
 
-  useWebSocket(
-        'ws://'
-        + 'localhost:8000'
+  useWebSocket(process.env.REACT_APP_WEBSOCKET_SERVER
         + '/ws/status/', { onMessage, onClose });
 
   return (

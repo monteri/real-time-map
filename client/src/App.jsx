@@ -13,7 +13,7 @@ function App() {
     if (!roomName || !username) {
       return;
     }
-    fetch('http://localhost:8000/enter_room/', {
+    fetch(`${process.env.REACT_APP_API_SERVER}/api/enter_room/`, {
       method: 'POST',
       body: JSON.stringify({ room: roomName, username }),
       headers: {
