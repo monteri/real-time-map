@@ -1,5 +1,4 @@
-import os
-
+from .wsgi import *
 from channels.auth import AuthMiddlewareStack
 from channels.security.websocket import AllowedHostsOriginValidator
 from channels.routing import ProtocolTypeRouter, URLRouter
