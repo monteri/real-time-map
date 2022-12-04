@@ -36,4 +36,4 @@ services:
       - "80:80"
     volumes:
       - ./nginx:/etc/nginx/conf.d
-      - ./static:/static
+      - .:/app/
