@@ -14,7 +14,9 @@ services:
     restart: always
 
   django_asgi:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     container_name: django_asgi
     command: daphne config.asgi:application -b 0.0.0.0 -p 8001
     volumes:
