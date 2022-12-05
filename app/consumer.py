@@ -5,7 +5,11 @@ from django.conf import settings
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
 
+from app.utils.connections_counter import ConnectionsCounter
+
 redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+
+connections_counter = ConnectionsCounter()
 
 
 def get_redis_room(room):
@@ -17,20 +21,6 @@ def get_rooms():
     return list(map(lambda x: x.decode("utf-8").split(':')[1], keys))
 
 
-connections = {}
-
-
-def mutate_connections(room, action):
-    count = 0
-    if room in connections:
-        count = connections[room]
-    if action == 'add':
-        count += 1
-    elif action == 'delete':
-        count -= 1
-    connections[room] = count
-
-
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room = self.scope['url_route']['kwargs']['room']
@@ -40,10 +30,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.channel_name,
         )
         await self.accept()
-
+        connections_counter.mutate_connections(self.room, 'add')
         await self.channel_layer.group_send(
             'rooms_status',
-            {'type': 'update_rooms_data', 'room': self.room, 'action': 'add'}
+            {'type': 'rooms_data' },
         )
 
     async def disconnect(self, code):
@@ -51,9 +41,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name,
         )
+        connections_counter.mutate_connections(self.room, 'delete')
         await self.channel_layer.group_send(
             'rooms_status',
-            {'type': 'update_rooms_data', 'room': self.room, 'action': 'delete'}
+            {'type': 'rooms_data' }
         )
 
     async def receive(self, text_data=None, bytes_data=None):
@@ -143,7 +134,7 @@ class StatusConsumer(AsyncWebsocketConsumer):
         await self.accept()
         await self.channel_layer.group_send(
             'rooms_status',
-            {'type': 'update_rooms_data'}
+            {'type': 'rooms_data'}
         )
 
     async def disconnect(self, code):
@@ -152,9 +143,6 @@ class StatusConsumer(AsyncWebsocketConsumer):
             self.channel_name,
         )
 
-    async def update_rooms_data(self, event):
-        room = event.get('room')
-        action = event.get('action')
-        if room and action:
-            mutate_connections(room, action)
-        await self.send(text_data=json.dumps({k: v for k, v in connections.items() if connections[k] > 0}))
+    async def rooms_data(self, event):
+        await self.send(text_data=json.dumps({
+            k: v for k, v in connections_counter.connections.items() if connections_counter.connections[k] > 0}))
